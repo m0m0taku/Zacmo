@@ -522,3 +522,65 @@ require get_template_directory() . '/inc/customizer.php';
 if ( ! class_exists( 'Featured_Content' ) && 'plugins.php' !== $GLOBALS['pagenow'] ) {
 	require get_template_directory() . '/inc/featured-content.php';
 }
+
+// Fix error qtranslate
+add_filter( 'wp_default_editor', create_function('', 'return "html";') );
+
+/**
+ * Add class curent for menu
+ */
+add_filter('nav_menu_css_class' , 'special_nav_class' , 10 , 2);
+function special_nav_class($classes, $item){
+     if( in_array('current-menu-item', $classes) ){
+             $classes[] = 'current ';
+     }
+     return $classes;
+}
+function add_markup_pages($output) {
+    //$output= preg_replace('/menu-item/', 'first-menu-item menu-item', $output, 1);
+	$output=substr_replace($output, "last menu-item", strripos($output, "menu-item"), strlen("menu-item"));
+    return $output;
+}
+add_filter('wp_nav_menu', 'add_markup_pages');
+
+function my_excerpt($limit = 20, $char = false) {
+	//echo qtrans_use('ja',get_the_content(),false);
+	if($char)
+		$excerpt = preg_split('/(?<!^)(?!$)/u', qtrans_use('ja',get_the_content(),false));
+	else
+		$excerpt = explode(' ', the_content(), $limit);
+	//echo count($excerpt); die();
+	if (count($excerpt)>=$limit) {
+		array_pop($excerpt);
+		$excerpt = implode(" ",$excerpt);
+	} else {
+		$excerpt = implode(" ",$excerpt);
+	}	
+	if($char)
+		$excerpt = mb_substr($excerpt,0,$limit).'.......';
+	$excerpt = preg_replace('`\[[^\]]*\]`','',$excerpt);
+	return $excerpt;
+}
+ 
+function my_content($limit = 20) {
+	$content = explode(' ', get_the_content(), $limit);
+	if (count($content)>=$limit) {
+	array_pop($content);
+		$content = implode(" ",$content).'...';
+	} else {
+		$content = implode(" ",$content);
+	}	
+	$content = preg_replace('/\[.+\]/','', $content);
+	$content = apply_filters('the_content', $content); 
+	$content = str_replace(']]>', ']]&gt;', $content);
+	return $content;
+}
+
+/**
+*	Use latest jQuery release
+*/
+if( !is_admin() ){
+	wp_deregister_script('jquery');
+	wp_register_script('jquery', ("http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"), false, '');
+	wp_enqueue_script('jquery');
+}
